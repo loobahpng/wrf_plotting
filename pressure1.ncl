@@ -13,7 +13,7 @@ if (plottype.eq."hourly") then
 	pressure_levels = (/ 850./)   ; pressure levels to plot
 	do iFil=0,dimsizes(fils)-1,1
 		type = "pdf"
-		wks = gsn_open_wks(type,"fig/"+plotwhich+"_"+pressure_levels+"hpa_"+plottype+(iFil+1))
+		wks = gsn_open_wks(type,"/home/L.r02229011/wrf_fig/"+plotwhich+"_"+pressure_levels+"hpa_"+plottype+(iFil+1))
 		res = True
 		res@MainTitle                   = "REAL-TIME WRF"
 		res@Footer = False
@@ -116,7 +116,8 @@ if (plottype.eq."hourly") then
 				opts = res                          
 				opts@cnFillOn=True
 				if plotwhich.eq."CTR" then
-;					opts@ContourParameters = (/ 5.0 /)
+					gsn_define_colormap(wks,"MPL_RdBu")
+					opts@ContourParameters = (/ -1.,1.,0.1 /)
 					contour_w = wrf_contour(in[iFil],wks,w_plane,opts)
 				else if plotwhich.eq."IRR-CTR"then
 ;					opts@ContourParameters = (/ 1. /)

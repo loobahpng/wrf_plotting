@@ -2704,7 +2704,6 @@ begin
 ;
   mx = max(data)
   mn = min(data)
-
   if(mn.ne.mx.and.opts.and.isatt(opts,"ContourParameters")) then
     if(dimsizes(opts@ContourParameters) .eq. 1) then
 
@@ -4138,8 +4137,11 @@ begin
     map_args@mpNestTime = get_res_value_keep(map_args, "mpNestTime",0)
 
       if(isfilevar(in_file,"XLAT"))
-        lat = in_file->XLAT(map_args@mpNestTime,:,:)
-        lon = in_file->XLONG(map_args@mpNestTime,:,:)
+;haowei
+;        lat = in_file->XLAT(map_args@mpNestTime,:,:)
+;        lon = in_file->XLONG(map_args@mpNestTime,:,:)
+        lat = in_file->XLAT(:,:)
+        lon = in_file->XLONG(:,:)
       else
         lat = in_file->XLAT_M(map_args@mpNestTime,:,:)
         lon = in_file->XLONG_M(map_args@mpNestTime,:,:)
