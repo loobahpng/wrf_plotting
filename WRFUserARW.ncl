@@ -954,11 +954,16 @@ begin
            end if
          else
            if(ISFILE) then
-             var = nc_file->PH(time,:,:,:)
-             PHB = nc_file->PHB(time,:,:,:)
+;haowei
+;             var = nc_file->PH(time,:,:,:)
+;             PHB = nc_file->PHB(time,:,:,:)
+             var = nc_file->PH(time_in,:,:,:)
+             PHB = nc_file->PHB(time_in,:,:,:)
            else
-             var = file_handle[:]->PH(time,:,:,:)
-             PHB = file_handle[:]->PHB(time,:,:,:)
+;             var = file_handle[:]->PH(time,:,:,:)
+;             PHB = file_handle[:]->PHB(time,:,:,:)
+             var = file_handle[:]->PH(time_in,:,:,:)
+             PHB = file_handle[:]->PHB(time_in,:,:,:)
            end if
          end if
 

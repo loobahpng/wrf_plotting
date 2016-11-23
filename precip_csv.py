@@ -10,7 +10,7 @@ def replace(l, X, Y):
         l.insert(i, Y)
 
 for row in csv.reader(f):
-	print(row)
+#	print(row)
 	continue
 f.close()
 print("len of row: "+str(len(row)))
@@ -33,6 +33,7 @@ may=np.array([float(i) for i in may])
 
 FMAM=(feb+mar+apr+may)/4.0
 print("len of FMAM: "+str(len(FMAM)))
+print(FMAM)
 #print(feb)
 #print(mar)
 #print(apr)

@@ -16,18 +16,20 @@ begin
 ;ls /work3/L.r02229011/WRF/control_1986*/*|grep "\-04\-10"
 quote = inttochar(34) 
 ensmean=1
+ip=1
 
-;plotwhich="IRR-CTR"
-plotwhich="CTR"
+plotwhich="IRR-CTR"
+;plotwhich="CTR"
 varname="tc"
+varname="specific humidity"
 
 if ensmean .eq.0 then
 	fils=systemfunc("ls /work3/L.r02229011/WRF/control_1986*/*|grep "+quote+"\-03\-10"+quote)
 	filsExp=systemfunc("ls /work3/L.r02229011/WRF/irr_1986*/*|grep "+quote+"\-03\-10"+quote)
 end if
 if ensmean.eq.1 then
-	fils=systemfunc ("ls /work3/L.r02229011/WRF/control_ensmean.nc")
-	filsExp=systemfunc ("ls /work3/L.r02229011/WRF/irr_ensmean.nc")
+	fils=systemfunc ("ls /work3/L.r02229011/WRF/control_ensmean_1981_2010.nc")
+	filsExp=systemfunc ("ls /work3/L.r02229011/WRF/irr_ensmean_1981_2010.nc")
 end if
 
 print(fils)
@@ -64,6 +66,12 @@ inExp = addfiles(filsExp,"r")  ; Open a file
 	ntimes = dimsizes(times)         ; number of times in the file
   ter = wrf_user_getvar(inExp[0], "LH",15)
 ;---------------------------------------------------------------
+average=new((/37,100,98/),"float")
+averageExp=average
+avgu=average
+avguExp=average
+avgw=average
+avgwExp=average
 do it = 0,ntimes-1,1             ; TIME LOOP
 	if ensmean.eq.0 then
 		print("Working on time: " + times(it) )
@@ -77,23 +85,29 @@ do it = 0,ntimes-1,1             ; TIME LOOP
 		res@TimeLabel = timestring   ; Set Valid time to use on plots
 	end if
     tc   = wrf_user_getvar(in[0],"tc",it)      ; T in C
-if varname.eq."specific humidity"then
-	rh=wrf_user_getvar(in[0],"QVAPOR",it)
-	rh(:,:,:)=rh(:,:,:)/(rh(:,:,:)+1)
-else
-    rh   = wrf_user_getvar(in[0],varname,it)      ; relative humidity
-end if
-    ua   = wrf_user_getvar(in[0],"ua",it)      
+	if varname.eq."specific humidity"then
+		rh=wrf_user_getvar(in[0],"QVAPOR",it)
+		rh(:,:,:)=rh(:,:,:)/(rh(:,:,:)+1)
+	else
+		rh   = wrf_user_getvar(in[0],varname,it)      ; relative humidity
+	end if
     wa   = wrf_user_getvar(in[0],"wa",it)      
 
     tcExp   = wrf_user_getvar(inExp[0],"tc",it)      ; T in C
-if varname.eq."specific humidity"then
-	rhExp=wrf_user_getvar(inExp[0],"QVAPOR",it)
-	rhExp(:,:,:)=rhExp(:,:,:)/(rhExp(:,:,:)+1)
-else
-    rhExp   = wrf_user_getvar(inExp[0],varname,it)      ; relative humidity
-end if
-    uaExp   = wrf_user_getvar(inExp[0],"ua",it)      
+	if varname.eq."specific humidity"then
+		rhExp=wrf_user_getvar(inExp[0],"QVAPOR",it)
+		rhExp(:,:,:)=rhExp(:,:,:)/(rhExp(:,:,:)+1)
+	else
+		rhExp   = wrf_user_getvar(inExp[0],varname,it)      ; relative humidity
+	end if
+	if ip.eq.2 then
+	    uaExp   = wrf_user_getvar(inExp[0],"va",it)      
+		ua   = wrf_user_getvar(in[0],"va",it)      
+	end if
+	if ip.eq.1 then
+		ua   = wrf_user_getvar(in[0],"ua",it)      
+	    uaExp   = wrf_user_getvar(inExp[0],"ua",it)      
+	end if
     waExp   = wrf_user_getvar(inExp[0],"wa",it)      
 
     z    = wrf_user_getvar(in[0], "z",it)      ; grid point height
@@ -104,7 +118,6 @@ end if
     end if
 ;---------------------------------------------------------------
 ;    do ip = 1, 3      	; we are doing 3 plots
-	ip=1
 			; all with the pivot point (plane) in the center of the domain
 			; at angles 0, 45 and 90
  ;  
@@ -157,10 +170,14 @@ end if
         end if
       ; X-axis lables
       dimsX = dimsizes(X_plane)
-      xmin  = X_plane(0)
-      xmax  = X_plane(dimsX(0)-1)
-      xspan = dimsX(0)-1
-      nx    = floattoint( (xmax-xmin)/2 + 1)
+;      xmin  = X_plane(0)
+;      xmax  = X_plane(dimsX(0)-1)
+;      xspan = dimsX(0)-1
+;      nx    = floattoint( (xmax-xmin)/2 + 1)
+	xmin  = X_plane(40)
+	xmax  = X_plane(60-1)
+	xspan = 60-40+1-1
+	nx=5
       ;---------------------------------------------------------------
       ; Options for XY Plots
         opts_xy                         = res
@@ -202,21 +219,27 @@ end if
         opts_tc@cnInfoLabelPerimOn = True
         opts_tc@cnInfoLabelOrthogonalPosF = -0.00005
 ;        opts_tc@ContourParameters  = (/ 5. /)
-        opts_tc@ContourParameters  = (/ 0.1 /)
+        opts_tc@ContourParameters  = (/ 0.5 /)
 
 		opts_uw = opts_xy
         delete(opts_uw@cnMissingValPerimOn  ) 
         delete(opts_uw@cnMissingValFillColor  )
         delete(opts_uw@cnMissingValFillPattern)
 		opts_uw@FieldTitle = "Wind" ; overwrite Field Title
-		opts_uw@NumVectors = 50 ; density of wind barbs
-		opts_uw@vcRefMagnitudeF=1.
+;		opts_uw@NumVectors = 25 ; density of wind barbs
+		opts_uw@vcRefMagnitudeF=0.5
+		opts_uw@vcRefAnnoOn=True
 		opts_uw@vcGlyphStyle ="LineArrow";"WindBarb"
-		vector = wrf_vector(in[0],wks,ua_planeExp(0:zmax_pos,:)-ua_plane(0:zmax_pos,:),10.*(wa_planeExp(0:zmax_pos,:)-wa_plane(0:zmax_pos,:)),opts_uw)
-		delete(opts_uw)
-
+		wa_planeExp=wa_planeExp*10.
+		wa_plane=wa_plane*10.
+		vector = wrf_vector(in[0],wks,ua_planeExp(0:zmax_pos,40:60)-ua_plane(0:zmax_pos,40:60),wa_planeExp(0:zmax_pos,40:60)-wa_plane(0:zmax_pos,40:60),opts_uw)
+		if it.ne.ntimes-1 then
+			delete(opts_uw)
+		end if
 
       ; Get the contour info for the rh and temp
+	rh_planeExp=rh_planeExp*1000.
+	rh_plane=rh_plane*1000.
 	if plotwhich.eq."CTR"then
 		if varname.eq."special humidity"then
 			opts_rh@ContourParameters = (/ 0.001, 0.012, 0.01/10. /)
@@ -229,10 +252,24 @@ end if
 	end if
 	if plotwhich .eq."IRR-CTR"then 
 		gsn_define_colormap(wks,"precip4_diff_19lev")
-		opts_rh@ContourParameters = (/ -0.0012, 0.0012, 0.0012/10. /)
-        contour_tc = wrf_contour(in[0],wks,tc_planeExp(0:zmax_pos,:)-tc_plane(0:zmax_pos,:),opts_tc)
-        contour_rh = wrf_contour(in[0],wks,rh_planeExp(0:zmax_pos,:)-rh_plane(0:zmax_pos,:),opts_rh)
+		opts_rh@ContourParameters = (/ -2., 2., 2./10. /)
+        contour_tc = wrf_contour(in[0],wks,tc_planeExp(0:zmax_pos,40:60)-tc_plane(0:zmax_pos,40:60),opts_tc)
+        contour_rh = wrf_contour(in[0],wks,rh_planeExp(0:zmax_pos,40:60)-rh_plane(0:zmax_pos,40:60),opts_rh)
+        contour_rh_contour = wrf_contour(in[0],wks,rh_plane(0:zmax_pos,40:60),opts_tc)
+		opts_tc@ContourParameters=(/2./)
+        contour_tc_contour = wrf_contour(in[0],wks,tc_plane(0:zmax_pos,40:60),opts_tc)
+		opts_rh@ContourParameters = (/ -2., 2., 2./10. /)
+;		opts_rh@cnLevelSelectionMode = "ExplicitLevels"
+;		opts_rh@cnLevels             = (/ -2.,-1.5,-1.,-0.5,0.,0.1,0.2,0.3,0.4/)
+		gsn_define_colormap(wks,"temp_19lev")
+        contour_tc_shading = wrf_contour(in[0],wks,tc_planeExp(0:zmax_pos,40:60)-tc_plane(0:zmax_pos,40:60),opts_rh)
 	end if
+	average(it,:,:)=rh_plane
+	averageExp(it,:,:)=rh_planeExp
+	avgu(it,:,:)=ua_plane
+	avguExp(it,:,:)=ua_planeExp
+	avgw(it,:,:)=wa_plane
+	avgwExp(it,:,:)=wa_planeExp
       ;---------------------------------------------------------------
   ; MAKE PLOTS         
         if (FirstTimeMap) then
@@ -257,24 +294,40 @@ end if
           delete(lon_plane)
           delete(lat_plane)
           pltres@FramePlot = True
+			print("FistTimeMap")
        end if
 
-       plot = wrf_overlays(in[0],wks,(/contour_rh,contour_tc,vector/),pltres)    ; plot x-section
+;       plot = wrf_overlays(in[0],wks,(/contour_rh,contour_tc,vector/),pltres)    ; plot x-section
+       plot = wrf_overlays(in[0],wks,(/contour_tc_contour,contour_tc_shading,vector/),pltres)    ; plot x-section
 
   ; Delete options and fields, so we don't have carry over
+	if it.ne.ntimes-1 then
         delete(opts_xy)
         delete(opts_tc)
         delete(opts_rh)
         delete(tc_plane)
         delete(rh_plane)
         delete(X_plane)
-
+	end if
 ;    end do  ; make next cross section
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     FirstTimeMap = False
   end do        ; END OF TIME LOOP
+
+	wks = gsn_open_wks(type,"/home/L.r02229011/wrf_fig/averaged_cross_section")
+	vector = wrf_vector(in[0],wks,dim_avg_n_Wrap(avguExp(15:21,0:zmax_pos,40:60),0)-dim_avg_n_Wrap(avgu(15:21,0:zmax_pos,40:60),0),dim_avg_n_Wrap(avgwExp(15:21,0:zmax_pos,40:60),0)-dim_avg_n_Wrap(avgw(15:21,0:zmax_pos,40:60),0),opts_uw)
+	opts_tc@ContourParameters=(/2./);tc
+	opts_tc@ContourParameters=(/0.5/);q
+	contour_tc_contour = wrf_contour(in[0],wks,dim_avg_n_Wrap(average(15:21,0:zmax_pos,40:60),0),opts_tc)
+	opts_rh@ContourParameters = (/ -2., 2., 2./10. /)
+	gsn_define_colormap(wks,"precip4_diff_19lev")
+;	gsn_define_colormap(wks,"temp_19lev")
+	contour_tc_shading = wrf_contour(in[0],wks,dim_avg_n_Wrap(averageExp(15:21,0:zmax_pos,40:60),0)-dim_avg_n_Wrap(average(15:21,0:zmax_pos,40:60),0),opts_rh)
+   plot = wrf_overlays(in[0],wks,(/contour_tc_contour,contour_tc_shading,vector/),pltres)    ; plot x-section
+
+
 
 end
 

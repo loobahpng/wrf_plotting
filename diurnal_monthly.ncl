@@ -12,19 +12,22 @@ if ensmean .eq.0 then
 	filsExp=systemfunc("ls /work3/L.r02229011/WRF/irr_1986*/*|grep "+quote+"\-03\-10"+quote)
 end if
 if ensmean.eq.1 then
-	fils=systemfunc ("ls /work3/L.r02229011/WRF/control_ensmean.nc")
-	filsExp=systemfunc ("ls /work3/L.r02229011/WRF/irr_ensmean.nc")
+	fils=systemfunc ("ls /work3/L.r02229011/WRF/control_ensmean_1981_2010.nc")
+	filsExp=systemfunc ("ls /work3/L.r02229011/WRF/irr_ensmean_1981_2010.nc")
+;	filsExp=systemfunc ("ls /work4/L.r02229011/WRF_3_5_1/WRFV3/run/saudi/irr_2010_half.nc")
+	fils=systemfunc ("ls /work4/L.r02229011/WRF_3_5_1/WRFV3/run/saudi/ctr_2010.nc")
+	filsExp=systemfunc ("ls /work4/L.r02229011/WRF_3_5_1/WRFV3/run/saudi/irr_2010_75.nc")
+
 end if
 
 ;plotwhich="CTR"
 plotwhich="IRR-CTR"
-;varname="cape_2d"
 ;varname="vec_pres"
-;varname="ter"
-;varname="QVAPOR"
-;varname="divergence"
+;varname="slp"
 ;varname="precip"
-varname="T2"
+;varname="T2"
+;varname="ua"
+varname="LH"
 composite="all"
 level=0
 
@@ -33,12 +36,16 @@ level=0
 	print("number of files: "+numFILS)
 	in = addfiles(fils,"r")  ; Open a file
 	inExp = addfiles(filsExp,"r")  ; Open a file
-	type = "pdf"
+	type = "png"
 	res = True                           ; Set up some basic plot resources
+
 	res@MainTitle = "Vector"
 	res@Footer = False
 	pltres = True
 	mpres = True
+    mpres@mpOutlineBoundarySets       = "National"
+	mpres@mpNationalLineThicknessF=1.
+    mpres@mpGeophysicalLineThicknessF =5.
 	mpres@mpGeophysicalLineColor = "Black"
 	mpres@mpGridLineColor = "Black"
 	mpres@mpLimbLineColor = "Black"
@@ -90,6 +97,7 @@ level=0
 		print("VarExp4d ok")
 		p=wrf_user_getvar(in[iFilList(0)],"pressure",diurnal)
 		pExp=wrf_user_getvar(inExp[iFilList(0)],"pressure",diurnal)
+		printVarSummary(Var4d)
 		Var = wrf_user_intrp3d( Var4d,p,"h",level,0.,False)
 		print("Var ok")
 		delete(Var4d)
@@ -251,10 +259,14 @@ end if
 	u10Exp=u10Exp/days
 	v10Exp=v10Exp/days
 	opts = res
+	opts@InitTime=False
 	opts@cnFillOn            = True
 	opts@cnFillMode       = "RasterFill"
+    opts@lbLabelFontHeightF=.02
 	wks = gsn_open_wks(type,"/home/L.r02229011/wrf_fig/"+plotwhich+"_"+varname+"_monthly")
 ;	wks = gsn_open_wks(type,"/home/L.r02229011/wrf_fig/Both_vector_monthly")
+	CTR_diurnal=new(24,"float")
+	IRR_diurnal=CTR_diurnal
 	do idiurnal=0,23
 		if ensmean.eq.0 then
 			opts@TimeLabel=times(idiurnal)
@@ -273,14 +285,18 @@ end if
 				opts@ContourParameters = (/ 270., 305., 1.75 /)
 			else if varname.eq."vec_pres"then
 				opts@ContourParameters = (/ -10., 10., 1. /)
-			end if	end if	end if
+			else if varname.eq."LH"then
+				opts@ContourParameters=(/0.,50.,2.5/)
+			end if	end if	end if	end if
 			contour = wrf_contour(in[0],wks,Var(idiurnal,:,:),opts)
 		else if	plotwhich.eq."IRR-CTR"then
 			gsn_define_colormap(wks,"MPL_RdBu")
 			if varname.eq."cape_2d"then
 				opts@ContourParameters = (/ -500., 500., 50. /)
 			else if varname.eq."LH"then
-				opts@ContourParameters = (/ -100., 100., 20. /)
+				opts@ContourParameters = (/ -200., 200., 200./10. /)
+			else if varname.eq."slp"then
+				opts@ContourParameters = (/ -1, 1, 1/10. /)
 			else if varname.eq."T2"then
 				gsn_define_colormap(wks,"temp_19lev")
 				opts@ContourParameters = (/ -4., 4., 0.4 /)
@@ -288,11 +304,11 @@ end if
 				gsn_define_colormap(wks,"temp_19lev")
 				opts@ContourParameters = (/ -2., 2., 0.2 /)
 			else if varname.eq."divergence".or.varname.eq."vec_pres"then
-				opts@ContourParameters = (/ -1., 1., 1./10. /)
+				opts@ContourParameters = (/ -4., 4., 4./10. /)
 			else if varname.eq."precip"then
 				gsn_define_colormap(wks,"precip4_diff_19lev")
 				opts@ContourParameters = (/ -0.1, 0.1, 0.1/10. /)
-			end if	end if	end if	end if	end if	end if
+			end if end if end if end if end if end if end if
 			if varname.eq."SMOIS"then
 				gsn_define_colormap(wks,"temp_19lev")
 				opts@ContourParameters = (/ -0.2, 0.2, 0.2/10. /)
@@ -301,6 +317,20 @@ end if
 				contour = wrf_contour(in[0],wks,VarExp(idiurnal,:,:)-Var(idiurnal,:,:),opts)
 			end if
 		end if
+
+			tmp=new((/99,99/),"float")
+			tmp(:,:)=0.
+			tmpExp=tmp
+			do i=42,56
+				do j=i-2,i+2    ;-7 -2 +2
+				if((j.ge.0).and.(j.le.98))then
+					tmp(98-i,j)=Var(idiurnal,98-i,j)
+					tmpExp(98-i,j)=VarExp(idiurnal,98-i,j)
+				end if
+				end do
+			end do
+			CTR_diurnal(idiurnal)=dim_sum_n_Wrap(dim_sum_n_Wrap(tmp,0),0)/75.
+			IRR_diurnal(idiurnal)=dim_sum_n_Wrap(dim_sum_n_Wrap(tmpExp,0),0)/75.
 		end if
 		;==== Vector
 		optsVec = res          
@@ -310,13 +340,16 @@ end if
 		optsVec@NumVectors = 20        ; density of wind barbs
 		optsVec@FieldTitle = "Wind"    ; overwrite Field Title
 		if plotwhich.eq."CTR"then
-			optsVec@vcRefMagnitudeF=3.
-			vector = wrf_vector(in[0],wks,u(idiurnal,:,:),v(idiurnal,:,:),optsVec)
+			optsVec@vcRefMagnitudeF=2.
+			;vector = wrf_vector(in[0],wks,u(idiurnal,:,:),v(idiurnal,:,:),optsVec)
 		else if plotwhich.eq."IRR-CTR"then
 			optsVecAno=optsVec
 			optsVecAno@vcLineArrowColor        = "blue"
-			optsVecAno@vcRefMagnitudeF=2.
-;			vector = wrf_vector(in[0],wks,uExp(idiurnal,:,:)-u(idiurnal,:,:),vExp(idiurnal,:,:)-v(idiurnal,:,:),optsVecAno)
+			optsVecAno@vcRefMagnitudeF=5.
+			if level.ne.0 then
+				;vector = wrf_vector(in[0],wks,uExp(idiurnal,:,:)-u(idiurnal,:,:),vExp(idiurnal,:,:)-v(idiurnal,:,:),optsVecAno)
+				;vector = wrf_vector(in[0],wks,u(idiurnal,:,:),v(idiurnal,:,:),optsVecAno)
+			end if
 		end if	end if
 		pltres@PanelPlot = True 
 	if varname.eq."vec_pres"then
@@ -325,20 +358,25 @@ end if
 		plot = wrf_map_overlays(in[0],wks,(/contour/),pltres,mpres)
 	end if
 		pmres = True
-		pmres@gsMarkerColor = "Black"
+		pmres@gsMarkerColor = "Red"
 		pmres@gsMarkerIndex = 16
 		pmres@gsMarkerSizeF = 0.01
-		plotstn=gsn_add_polymarker(wks,plot,43.97,26.33,pmres)
+		;plotstn=gsn_add_polymarker(wks,plot,43.97,26.33,pmres)
+		plotstn1=gsn_add_polymarker(wks,plot,41.69,27.44,pmres)
+		plotstn2=gsn_add_polymarker(wks,plot,43.77,26.30,pmres)
+		plotstn3=gsn_add_polymarker(wks,plot,46.73,24.71,pmres)
 		draw(plot)
 		frame(wks)
 	end do	; idiurnal
+	print(" CTR_diurnal: "+CTR_diurnal)
+	print(" IRR_diurnal: "+IRR_diurnal)
 	;======================
 	;For plotting irrigation region
 	if plotres.eq."27km"then
 		tmp=new((/99,99/),"float")
 		tmp(:,:)=0.
 		do i=42,56
-			do j=i-2,i+2
+			do j=i-2,i+2  ;i-2,i+2 is irrigated i-7,i+2 includes its neighborhood
 			if((j.ge.0).and.(j.le.98))then
 				tmp(98-i,j)=19
 			end if
@@ -355,7 +393,15 @@ end if
 			end do
 		end do
 	end if	end if
+;	print("^^^^^^^^^^^^^^")
+;	print("lat: "+in[0]->XLAT(56,35))
+;	print("lon: "+in[0]->XLONG(56,35))
+;	print("lat: "+in[0]->XLAT(56,44))
+;	print("lon: "+in[0]->XLONG(56,44))
+;	print(ind(tmp(56,:).eq.19))
+;	print("^^^^^^^^^^^^^^")
 	res2=opts
+	res2@ValidTime=False
 	res2@MainTitle=""
 	res@SubFieldTitle=""
 	res2@cnFillOn=False
@@ -368,16 +414,32 @@ end if
 	res2@cnLineColor="red"
 	;======================
 	wks2 = gsn_open_wks(type,"/home/L.r02229011/wrf_fig/CTR_"+varname+"_monthly_mean_"+plotres)
-;	opts@ContourParameters = (/ 0, 1500., 1500./10. /)
+	opts@TimeLabel="Monthly mean"
+    gsn_define_colormap(wks2,"MPL_RdBu")
+    gsn_define_colormap(wks2,"BlAqGrYeOrRe")
+	opts@ContourParameters = (/ 0., 50., 50./20. /)
+	if varname.eq."T2"then
+		opts@ContourParameters = (/ 273., 313., 20./10. /)
+		gsn_define_colormap(wks2,"temp_19lev")
+	end if
 	contour = wrf_contour(in[0],wks2,dim_avg_n_Wrap(Var,0),opts)
+	if varname.eq."precip"then
+		gsn_define_colormap(wks2,"precip3_16lev")
+		opts@ContourParameters = (/ 0, 40., 40./20. /)
+		if numFILS.eq.1 then
+			Var2=Var*3486./4./29.
+			VarExp2=VarExp*3486./4./29.  ;3486 days 4 month(FMAM) 29years
+		end if
+		contour = wrf_contour(in[0],wks2,dim_sum_n_Wrap(Var2,0),opts)
+	end if
 	contour_irri=wrf_contour(in[0],wks2,tmp,res2)
 	pltres@PanelPlot = True 
-if varname.eq."vec_pres"then
-	vector = wrf_vector(in[0],wks2,dim_avg_n_Wrap(u,0),dim_avg_n_Wrap(v,0),optsVec)
-	plot2 = wrf_map_overlays(in[0],wks2,(/contour,contour_irri,vector/),pltres,mpres)
-else
-	plot2 = wrf_map_overlays(in[0],wks2,(/contour,contour_irri/),pltres,mpres)
-end if
+	if varname.eq."vec_pres"then
+		vector = wrf_vector(in[0],wks2,dim_avg_n_Wrap(u,0),dim_avg_n_Wrap(v,0),optsVec)
+		plot2 = wrf_map_overlays(in[0],wks2,(/contour,contour_irri,vector/),pltres,mpres)
+	else
+		plot2 = wrf_map_overlays(in[0],wks2,(/contour,contour_irri/),pltres,mpres)
+	end if
 	pmres = True
 	pmres@gsMarkerColor = "Black"
 	pmres@gsMarkerIndex = 16
@@ -387,30 +449,35 @@ end if
 	frame(wks2)
 
 	wks2 = gsn_open_wks(type,"/home/L.r02229011/wrf_fig/IRR-CTR_"+varname+"_monthly_mean_"+plotres)
-	gsn_define_colormap(wks2,"temp_19lev")
-;	opts@ContourParameters = (/ -100., 100., 10. /)
-	contour = wrf_contour(in[0],wks2,dim_avg_n_Wrap(VarExp,0)-dim_avg_n_Wrap(Var,0),opts)
+	gsn_define_colormap(wks2,"MPL_RdBu")
+;	opts@ContourParameters=opts@ContourParameters*0.6
+	opts@ContourParameters=(/-5.,5.,5./10./)
+	if varname.eq."T2" then
+		gsn_define_colormap(wks2,"temp_19lev")
+	end if
+	contour = wrf_contour(in[0],wks2,dim_avg_n_Wrap(VarExp(6:12,:,:),0)-dim_avg_n_Wrap(Var(6:12,:,:),0),opts)
 	if varname.eq."precip"then
 		gsn_define_colormap(wks2,"precip4_diff_19lev")
-		opts@ContourParameters=(/-1.,1.,0.1/)
+		opts@ContourParameters=(/-4.,4.,0.4/)
 		if numFILS.ne.1 then
 			Var=Var*days/12./18.
 			VarExp=VarExp*days/12./18.
 		end if
 		if numFILS.eq.1 then
-			Var=Var*2163/12./18.
-			VarExp=VarExp*2163/12./18.
+			Var=Var*3486/4./29.
+			VarExp=VarExp*3486/4./29.  ;3486 days 4 month(FMAM) 29years
 		end if
-		contour = wrf_contour(in[0],wks2,dim_sum_n_Wrap(VarExp,0)-dim_sum_n_Wrap(Var,0),opts)
+		contour = wrf_contour(in[0],wks2,dim_sum_n_Wrap(VarExp(6:12,:,:),0)-dim_sum_n_Wrap(Var(6:12,:,:),0),opts)
 	end if
 	contour_irri=wrf_contour(in[0],wks2,tmp,res2)
 	pltres@PanelPlot = True 
-if varname.eq."vec_pres"then
-	vector = wrf_vector(in[0],wks2,dim_avg_n_Wrap(uExp,0)-dim_avg_n_Wrap(u,0),dim_avg_n_Wrap(vExp,0)-dim_avg_n_Wrap(v,0),optsVecAno)
-	plot2 = wrf_map_overlays(in[0],wks2,(/contour,vector,contour_irri/),pltres,mpres)
-else
-	plot2 = wrf_map_overlays(in[0],wks2,(/contour,contour_irri/),pltres,mpres)
-end if
+	if varname.eq."vec_pres"then
+		vector = wrf_vector(in[0],wks2,dim_avg_n_Wrap(uExp(6:12,:,:),0)-dim_avg_n_Wrap(u(6:12,:,:),0),dim_avg_n_Wrap(vExp(6:12,:,:),0)-dim_avg_n_Wrap(v(6:12,:,:),0),optsVecAno)
+;		vector = wrf_vector(in[0],wks2,dim_avg_n_Wrap(u(6:12,:,:),0),dim_avg_n_Wrap(v(6:12,:,:),0),optsVecAno)
+		plot2 = wrf_map_overlays(in[0],wks2,(/contour,vector,contour_irri/),pltres,mpres)
+	else
+		plot2 = wrf_map_overlays(in[0],wks2,(/contour,contour_irri/),pltres,mpres)
+	end if
 	pmres = True
 	pmres@gsMarkerColor = "Black"
 	pmres@gsMarkerIndex = 16
