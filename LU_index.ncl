@@ -8,6 +8,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/wrf/WRFUserARW.ncl"
 begin
 
 varname="LU_INDEX"
+varname="IVGTYP"
 
 ;  FILS=systemfunc("ls /work4/L.r02229011/WRF_3_5_1/WPS/met_em.d01.1987* |head -1")
 ;  FILS=systemfunc("ls /work4/L.r02229011/WRF_3_4_1/noAVX/WRFV3/run/wrfinput_d02")
@@ -22,7 +23,7 @@ varname="LU_INDEX"
 type="png"
 ; type = "ps"
 ; type = "ncgm"
-  wks = gsn_open_wks(type,"fig/LU_index")
+  wks = gsn_open_wks(type,"/home/L.r02229011/fig/"+varname)
 
 
   res = True                           ; Set up some basic plot resources
@@ -39,12 +40,13 @@ type="png"
   mpres@mpNationalLineColor = "Black"
   mpres@mpPerimLineColor = "Black"
   mpres@mpUSStateLineColor = "Black"
-    Var = wrf_user_getvar(a,varname,-1)    ; Get skintemp from file
+    Vartemp = wrf_user_getvar(a,varname,-1)    ; Get skintemp from file
+	Var=tofloat(Vartemp)
 printVarSummary(Var)
    Var1D=ndtooned(Var)
-   iIrr=ind(Var1D.eq.6.or.Var1D.eq.8);.or.Var1D.eq.3.or.Var1D.eq.4.or.Var1D.eq.5)
-   Var1D(iIrr)=999.
-   Var1D@_FillValue=999.
+   iIrr=ind(Var1D.eq.8.or.Var1D.eq.19);.or.Var1D.eq.3.or.Var1D.eq.4.or.Var1D.eq.5)
+;   Var1D(iIrr)=999.
+;   Var1D@_FillValue=999.
    Var=onedtond(Var1D,dimsizes(Var))
    delete(Var1D)
    delete(iIrr)
@@ -63,7 +65,7 @@ printVarSummary(Var)
                                 "Evergreen Broadleaf Forest", "Evergreen Needleleaf Forest", \
                                 "Mixed Forest", "Water Bodies", "Herbaceous Wetland", "Wooded Wetland", \
                                 "Barren or Sparsely Vegetated", "Herbaceous Tundra", "Wooded Tundra", \
-                                "Mixed Tundra", "Bare Ground Tundra", "Snow or Ice" /)
+                                "Mixed Tundra", "Bare Ground Tundra", "Snow or Ice" /) ; start from 1
        opts@lbLabelAngleF = 270.0
        opts@lbLabelAlignment = "BoxCenters"
        opts@lbTitleOn = False
@@ -71,6 +73,11 @@ printVarSummary(Var)
        opts@lbLabelJust = "CenterLeft"
        opts@pmLabelBarOrthogonalPosF = 0.01
 
+
+
+	pltres@NoTitles=True
+	opts@NoHeaderFooter=True
+	mpres@tiMainString="Vegetation Type"		
 ;    opts@cnFillMode = "RasterFill"
 ;    opts@ContourParameters = (/ 1,16,1 /)
   do ifil = 0,numFILS-1

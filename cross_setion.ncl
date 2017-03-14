@@ -16,12 +16,12 @@ begin
 ;ls /work3/L.r02229011/WRF/control_1986*/*|grep "\-04\-10"
 quote = inttochar(34) 
 ensmean=1
-ip=1
+ip=2
 
 plotwhich="IRR-CTR"
 ;plotwhich="CTR"
 varname="tc"
-varname="specific humidity"
+;varname="specific humidity"
 
 if ensmean .eq.0 then
 	fils=systemfunc("ls /work3/L.r02229011/WRF/control_1986*/*|grep "+quote+"\-03\-10"+quote)
@@ -226,8 +226,8 @@ do it = 0,ntimes-1,1             ; TIME LOOP
         delete(opts_uw@cnMissingValFillColor  )
         delete(opts_uw@cnMissingValFillPattern)
 		opts_uw@FieldTitle = "Wind" ; overwrite Field Title
-;		opts_uw@NumVectors = 25 ; density of wind barbs
-		opts_uw@vcRefMagnitudeF=0.5
+		opts_uw@NumVectors = 20 ; density of wind barbs
+		opts_uw@vcRefMagnitudeF=0.4
 		opts_uw@vcRefAnnoOn=True
 		opts_uw@vcGlyphStyle ="LineArrow";"WindBarb"
 		wa_planeExp=wa_planeExp*10.
@@ -238,8 +238,13 @@ do it = 0,ntimes-1,1             ; TIME LOOP
 		end if
 
       ; Get the contour info for the rh and temp
+
+if varname .eq."specific humidity"then
 	rh_planeExp=rh_planeExp*1000.
 	rh_plane=rh_plane*1000.
+end if
+; multiplied by 1000 if humidity
+
 	if plotwhich.eq."CTR"then
 		if varname.eq."special humidity"then
 			opts_rh@ContourParameters = (/ 0.001, 0.012, 0.01/10. /)
@@ -319,13 +324,14 @@ do it = 0,ntimes-1,1             ; TIME LOOP
 	wks = gsn_open_wks(type,"/home/L.r02229011/wrf_fig/averaged_cross_section")
 	vector = wrf_vector(in[0],wks,dim_avg_n_Wrap(avguExp(15:21,0:zmax_pos,40:60),0)-dim_avg_n_Wrap(avgu(15:21,0:zmax_pos,40:60),0),dim_avg_n_Wrap(avgwExp(15:21,0:zmax_pos,40:60),0)-dim_avg_n_Wrap(avgw(15:21,0:zmax_pos,40:60),0),opts_uw)
 	opts_tc@ContourParameters=(/2./);tc
-	opts_tc@ContourParameters=(/0.5/);q
+;	opts_tc@ContourParameters=(/0.5/);q
 	contour_tc_contour = wrf_contour(in[0],wks,dim_avg_n_Wrap(average(15:21,0:zmax_pos,40:60),0),opts_tc)
 	opts_rh@ContourParameters = (/ -2., 2., 2./10. /)
 	gsn_define_colormap(wks,"precip4_diff_19lev")
-;	gsn_define_colormap(wks,"temp_19lev")
+	gsn_define_colormap(wks,"temp_19lev")
 	contour_tc_shading = wrf_contour(in[0],wks,dim_avg_n_Wrap(averageExp(15:21,0:zmax_pos,40:60),0)-dim_avg_n_Wrap(average(15:21,0:zmax_pos,40:60),0),opts_rh)
-   plot = wrf_overlays(in[0],wks,(/contour_tc_contour,contour_tc_shading,vector/),pltres)    ; plot x-section
+;   plot = wrf_overlays(in[0],wks,(/contour_tc_contour,contour_tc_shading,vector/),pltres)    ; plot x-section
+   plot = wrf_overlays(in[0],wks,(/contour_tc_shading,vector/),pltres)    ; plot x-section
 
 
 

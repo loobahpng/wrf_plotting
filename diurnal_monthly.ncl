@@ -15,21 +15,21 @@ if ensmean.eq.1 then
 	fils=systemfunc ("ls /work3/L.r02229011/WRF/control_ensmean_1981_2010.nc")
 	filsExp=systemfunc ("ls /work3/L.r02229011/WRF/irr_ensmean_1981_2010.nc")
 ;	filsExp=systemfunc ("ls /work4/L.r02229011/WRF_3_5_1/WRFV3/run/saudi/irr_2010_half.nc")
-	fils=systemfunc ("ls /work4/L.r02229011/WRF_3_5_1/WRFV3/run/saudi/ctr_2010.nc")
-	filsExp=systemfunc ("ls /work4/L.r02229011/WRF_3_5_1/WRFV3/run/saudi/irr_2010_75.nc")
+;	fils=systemfunc ("ls /work4/L.r02229011/WRF_3_5_1/WRFV3/run/saudi/ctr_2010.nc")
+;	filsExp=systemfunc ("ls /work4/L.r02229011/WRF_3_5_1/WRFV3/run/saudi/irr_2010_75.nc")
 
 end if
 
 ;plotwhich="CTR"
 plotwhich="IRR-CTR"
-;varname="vec_pres"
+varname="vec_pres"
 ;varname="slp"
 ;varname="precip"
 ;varname="T2"
 ;varname="ua"
-varname="LH"
+;varname="LH"
 composite="all"
-level=0
+level=850
 
 
 	numFILS=dimsizes(fils)
@@ -347,7 +347,7 @@ end if
 			optsVecAno@vcLineArrowColor        = "blue"
 			optsVecAno@vcRefMagnitudeF=5.
 			if level.ne.0 then
-				;vector = wrf_vector(in[0],wks,uExp(idiurnal,:,:)-u(idiurnal,:,:),vExp(idiurnal,:,:)-v(idiurnal,:,:),optsVecAno)
+				vector = wrf_vector(in[0],wks,uExp(idiurnal,:,:)-u(idiurnal,:,:),vExp(idiurnal,:,:)-v(idiurnal,:,:),optsVecAno)
 				;vector = wrf_vector(in[0],wks,u(idiurnal,:,:),v(idiurnal,:,:),optsVecAno)
 			end if
 		end if	end if
@@ -451,7 +451,7 @@ end if
 	wks2 = gsn_open_wks(type,"/home/L.r02229011/wrf_fig/IRR-CTR_"+varname+"_monthly_mean_"+plotres)
 	gsn_define_colormap(wks2,"MPL_RdBu")
 ;	opts@ContourParameters=opts@ContourParameters*0.6
-	opts@ContourParameters=(/-5.,5.,5./10./)
+	opts@ContourParameters=(/-2.4,2.4,2.4/10./)
 	if varname.eq."T2" then
 		gsn_define_colormap(wks2,"temp_19lev")
 	end if
@@ -472,17 +472,19 @@ end if
 	contour_irri=wrf_contour(in[0],wks2,tmp,res2)
 	pltres@PanelPlot = True 
 	if varname.eq."vec_pres"then
-		vector = wrf_vector(in[0],wks2,dim_avg_n_Wrap(uExp(6:12,:,:),0)-dim_avg_n_Wrap(u(6:12,:,:),0),dim_avg_n_Wrap(vExp(6:12,:,:),0)-dim_avg_n_Wrap(v(6:12,:,:),0),optsVecAno)
-;		vector = wrf_vector(in[0],wks2,dim_avg_n_Wrap(u(6:12,:,:),0),dim_avg_n_Wrap(v(6:12,:,:),0),optsVecAno)
-		plot2 = wrf_map_overlays(in[0],wks2,(/contour,vector,contour_irri/),pltres,mpres)
+;		vector = wrf_vector(in[0],wks2,dim_avg_n_Wrap(uExp(6:12,:,:),0)-dim_avg_n_Wrap(u(6:12,:,:),0),dim_avg_n_Wrap(vExp(6:12,:,:),0)-dim_avg_n_Wrap(v(6:12,:,:),0),optsVecAno)
+		vector = wrf_vector(in[0],wks2,dim_avg_n_Wrap(u(6:12,:,:),0),dim_avg_n_Wrap(v(6:12,:,:),0),optsVecAno)
+		plot2 = wrf_map_overlays(in[0],wks2,(/vector,contour_irri/),pltres,mpres)
 	else
 		plot2 = wrf_map_overlays(in[0],wks2,(/contour,contour_irri/),pltres,mpres)
 	end if
-	pmres = True
-	pmres@gsMarkerColor = "Black"
-	pmres@gsMarkerIndex = 16
-	pmres@gsMarkerSizeF = 0.01
-	plotstn=gsn_add_polymarker(wks2,plot,43.97,26.33,pmres)
+;	pmres = True
+;	pmres@gsMarkerColor = "Black"
+;	pmres@gsMarkerIndex = 16
+;	pmres@gsMarkerSizeF = 0.01
+;	plotstn1=gsn_add_polymarker(wks2,plot2,41.69,27.44,pmres)
+;	plotstn2=gsn_add_polymarker(wks2,plot2,43.77,26.30,pmres)
+;	plotstn3=gsn_add_polymarker(wks2,plot2,46.73,24.71,pmres)
 	draw(plot2)
 	frame(wks2)
 	
